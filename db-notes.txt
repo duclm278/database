@@ -1,0 +1,5 @@
+Subject trỏ vào Subject (học phần tiên quyết)
+Subject Semester
+Enrolled -> Quá hạn hay không?
+Xem thời khóa biểu để lấy ý tưởng
+Xem dk-sis

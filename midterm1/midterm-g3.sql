@@ -1,9 +1,27 @@
+-- 0.
+SELECT
+    tablename,
+    indexname,
+    indexdef
+FROM
+    pg_indexes
+WHERE
+    schemaname = 'public'
+ORDER BY
+    indexname;
+
 -- 1.	Display the list of Customer in alphabetical order according to city
+drop index if exists index_city;
+create index index_city on customers (city);
+
 explain
 select * from customers order by city;
 
 -- 2.	Display the list of customers and theirs orders. All orders of the same
 -- customer must be grouped (appeared consecutively)
+drop index if exists index_customerid;
+create index index_customerid on orders (customerid);
+
 explain
 select customerid, orderid
 from orders
@@ -27,6 +45,9 @@ group by o.orderid;
 
 -- 5.	Display the list of products and the orderid of orders containing this
 -- product if any
+drop index if exists index_prod_id;
+create index index_prod_id on orderlines (prod_id);
+
 explain
 select p.prod_id, ol.orderid
 from products p
@@ -34,6 +55,7 @@ left join orderlines ol on ol.prod_id = p.prod_id
 order by p.prod_id, ol.orderid;
 
 -- 6.	Display the list of products appeared in the order(s)  on Dec 31, 2004
+drop index if exists index_orderdate;
 create index index_orderdate on orderlines (orderdate);
 
 explain
@@ -53,10 +75,10 @@ select * from orders o where o.orderdate = '2004-01-01';
 -- 8.	Do you have any comment/remarks on the previous query (number 7)
 
 -- 9.	Display the list of customers whose credit card is expired in June 2011
-drop index index_ccexp_month if exits;
+drop index if exists index_ccexp_month;
 create index index_ccexp_month on customers using btree (date_part('month', date(creditcardexpiration)));
 
-drop index index_ccexp_year if exits;
+drop index if exists index_ccexp_year;
 create index index_ccexp_year on customers using btree (date_part('year', date(creditcardexpiration)));
 
 explain
@@ -66,6 +88,7 @@ where date_part('month', date(creditcardexpiration)) = 6
 and date_part('year', date(creditcardexpiration)) = 2011;
 
 -- 10.	Display the list of customers without information of state
+drop index if exists index_state;
 create index index_state on customers (state);
 
 -- Cannot calculate index for null
@@ -74,6 +97,9 @@ select * from customers where state is null;
 
 -- 11.	Display the list of customers and the number of their order per month.
 -- The list is in alphabetical order of customer firstname and lastname
+drop index if exists index_customerid;
+create index index_customerid on orders (customerid);
+
 explain
 select c.firstname, c.lastname, o.customerid, date_part('month', o.orderdate), count(o.orderid)
 from orders o
@@ -107,6 +133,8 @@ where total > quan_in_stock;
 
 -- 14.	Display the list of states and the number of customers in each state if
 -- it is greater than 200
+create index index_state on customers (state);
+
 explain
 select c.state, count(c.customerid)
 from customers c

@@ -1,13 +1,12 @@
-CREATE SCHEMA IF NOT EXISTS sms;
-
-CREATE TABLE sms.faculty (
-	name varchar(35) NOT NULL,
-	location varchar(10),
-	CONSTRAINT pk_faculty PRIMARY KEY (name)
+create table faculty (
+	id char(10) not null,
+	name varchar(100),
+	location varchar(20),
+	constraint pk_faculty primary key (name)
 );
 
-CREATE TABLE sms.lecturer (
-	id char(12) NOT NULL,
+create table lecturer (
+	id char(12) not null,
 	first_name varchar(35),
 	last_name varchar(35),
 	gender char(1),
@@ -18,18 +17,23 @@ CREATE TABLE sms.lecturer (
 	email varchar(35),
 	phone varchar(12),
 	faculty_name varchar(35),
-	CONSTRAINT pk_lecturer PRIMARY KEY (id)
+	constraint pk_lecturer primary key (id),
+	constraint df_lecturer_gender default '?',
+	constraint ck_lecturer_gender check gender in ('F', 'M', '?'),
+	constraint df_lecturer_status default true,
 );
 
-CREATE TABLE sms.program (
-	name varchar(35) NOT NULL,
+create table program (
+	id char(6) not null,
+	name varchar(100),
 	credit_price integer,
 	faculty_name varchar(35),
-	CONSTRAINT pk_program PRIMARY KEY (name)
+	constraint pk_program primary key (id),
+	constraint ck_program_credit_price check credit_price >= 0,
 );
 
-CREATE TABLE sms.student (
-	id char(8) NOT NULL,
+create table student (
+	id char(8) not null,
 	first_name varchar(35),
 	last_name varchar(35),
 	gender char(1),
@@ -39,87 +43,115 @@ CREATE TABLE sms.student (
 	address varchar(70),
 	email varchar(35),
 	phone varchar(12),
+	cpa numeric(3, 2),
+	gpa numeric(3, 2),
 	credit_debt integer,
 	tutition_debt integer,
-	program_name varchar(35),
-	CONSTRAINT pk_student PRIMARY KEY (id)
+	program_id char(6),
+	constraint pk_student primary key (id),
+	constraint ck_student_gender check gender in ('M', 'F'),
+	constraint df_student_status default true,
+	constraint ck_student_cpa check (cpa >= 0 and cpa <= 4),
+	constraint ck_student_gpa check (gpa >= 0 and gpa <= 4),
+	constraint ck_student_credit_debt check credit_debt >= 0,
 );
 
-CREATE TABLE sms.subject (
-	id char(6) NOT NULL,
-	name varchar(35),
-	study_credit integer,
-	tutition_credit integer,
-	midterm_weight integer,
-	final_weight integer,
-	prerequisite char(6),
+create table subject (
+	id char(6) not null,
+	name varchar(100),
+	study_credits integer,
+	tutition_credits integer,
+	final_weight numeric(3, 2),
+	prerequisite_id char(6),
 	faculty_name varchar(35),
-	CONSTRAINT pk_subject PRIMARY KEY (id)
+	constraint pk_subject primary key (id),
+	constraint ck_student_study_credits check study_credits >= 0,
+	constraint ck_student_tutition_credits check tutition_credits >= 0,
+	constraint ck_subject_final_weight check (final_weight >= 0 and final_weight <= 1),
 );
 
-CREATE TABLE sms.class (
-	id char(6) NOT NULL,
+create table class (
+	id char(6) not null,
 	type char(3),
 	semester char(5),
 	start_time time,
 	end_time time,
 	study_weeks varchar(35),
-	location varchar(10),
+	location varchar(20),
 	current_cap integer,
 	max_cap integer,
 	company_id char(6),
 	lecturer_id char(12),
 	subject_id char(6),
-	CONSTRAINT pk_class PRIMARY KEY (id)
+	constraint pk_class primary key (id),
+	constraint unq_company_id unique (company_id),
+	constraint ck_class_type check type in ('LEC', 'PRA', 'LAB'),
+	constraint ck_class_start_time check start_time < end_time,
+	constraint ck_class_current_cap check current_cap >= 0 and current_cap <= max_cap,
 );
 
-CREATE TABLE sms.enrollment (
-	student_id char(8) NOT NULL,
-	class_id char(6) NOT NULL,
+create table curriculum (
+	program_id char(6) not null,
+	subject_id char(6) not null,
+	constraint pk_curriculum primary key (program_id, subject_id),
+);
+
+create table enrollment (
+	student_id char(8) not null,
+	class_id char(6) not null,
 	midterm_score integer,
 	final_score integer,
 	absent_count integer,
-	CONSTRAINT pk_enrollment PRIMARY KEY (student_id, class_id)
+	constraint pk_enrollment primary key (student_id, class_id),
+	constraint ck_enrollment_midterm_score check (midterm_score >= 0 and midterm_score <= 10),
+	constraint ck_enrollment_final_score check (final_score >= 0 and final_score <= 10),
+	constraint ck_enrollment_absent_count check absent_count >= 0,
 );
 
-CREATE TABLE sms.specialization (
-	lecturer_id char(12) NOT NULL,
-	subject_id char(6) NOT NULL,
-	CONSTRAINT pk_specialization PRIMARY KEY (lecturer_id, subject_id)
+create table specialization (
+	lecturer_id char(12) not null,
+	subject_id char(6) not null,
+	constraint pk_specialization primary key (lecturer_id, subject_id),
 );
 
-ALTER TABLE sms.class
-ADD CONSTRAINT fk_class_class FOREIGN KEY (company_id) REFERENCES sms.class(id);
+alter table class
+add constraint fk_class_class foreign key (company_id) references class(id);
 
-ALTER TABLE sms.class
-ADD CONSTRAINT fk_class_subject FOREIGN KEY (subject_id) REFERENCES sms.subject(id);
+alter table class
+add constraint fk_class_subject foreign key (subject_id) references subject(id);
 
-ALTER TABLE sms.class
-ADD CONSTRAINT fk_class_lecturer FOREIGN KEY (lecturer_id) REFERENCES sms.lecturer(id);
+alter table class
+add constraint fk_class_lecturer foreign key (lecturer_id) references lecturer(id);
 
-ALTER TABLE sms.enrollment
-ADD CONSTRAINT fk_enrollment_student FOREIGN KEY (student_id) REFERENCES sms.student(id);
+alter table curriculum
+add constraint fk_curriculum_subject foreign key (subject_id) references subject(id);
 
-ALTER TABLE sms.enrollment
-ADD CONSTRAINT fk_enrollment_class FOREIGN KEY (class_id) REFERENCES sms.class(id);
+alter table curriculum
+add constraint fk_curriculum_program foreign key (program_id) references program(id);
 
-ALTER TABLE sms.lecturer
-ADD CONSTRAINT fk_lecturer_faculty FOREIGN KEY (faculty_name) REFERENCES sms.faculty(name);
+alter table enrollment
+add constraint fk_enrollment_student foreign key (student_id) references student(id);
 
-ALTER TABLE sms.program
-ADD CONSTRAINT fk_program_faculty FOREIGN KEY (faculty_name) REFERENCES sms.faculty(name);
+alter table enrollment
+add constraint fk_enrollment_class foreign key (class_id) references class(id);
 
-ALTER TABLE sms.specialization
-ADD CONSTRAINT fk_specialization_lecturer FOREIGN KEY (lecturer_id) REFERENCES sms.lecturer(id);
+alter table lecturer
+add constraint fk_lecturer_faculty foreign key (faculty_name) references faculty(name);
 
-ALTER TABLE sms.specialization
-ADD CONSTRAINT fk_specialization_subject FOREIGN KEY (subject_id) REFERENCES sms.subject(id);
+alter table program
+add constraint fk_program_faculty foreign key (faculty_name) references faculty(name);
 
-ALTER TABLE sms.student
-ADD CONSTRAINT fk_student_program FOREIGN KEY (program_name) REFERENCES sms.program(name);
+alter table specialization
+add constraint fk_specialization_lecturer foreign key (lecturer_id) references lecturer(id);
 
-ALTER TABLE sms.subject
-ADD CONSTRAINT fk_subject_faculty FOREIGN KEY (faculty_name) REFERENCES sms.faculty(name);
+alter table specialization
+add constraint fk_specialization_subject foreign key (subject_id) references subject(id);
 
-ALTER TABLE sms.subject
-ADD CONSTRAINT fk_subject_subject FOREIGN KEY (prerequisite) REFERENCES sms.subject(id);
+alter table student
+add constraint fk_student_program foreign key (program_id) references program(id);
+
+alter table subject
+add constraint fk_subject_faculty foreign key (faculty_name) references faculty(name);
+
+alter table subject
+add constraint fk_subject_subject foreign key (prerequisite_id) references subject(id);

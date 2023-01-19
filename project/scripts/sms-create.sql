@@ -1,8 +1,11 @@
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+
 create table faculty (
-	id char(10) not null,
+	id varchar(8) not null,
 	name varchar(100),
-	location varchar(20),
-	constraint pk_faculty primary key (name)
+	location varchar(35),
+	constraint pk_faculty primary key (id)
 );
 
 create table lecturer (
@@ -16,20 +19,19 @@ create table lecturer (
 	address varchar(70),
 	email varchar(35),
 	phone varchar(12),
-	faculty_name varchar(35),
+	faculty_id varchar(8),
 	constraint pk_lecturer primary key (id),
-	constraint df_lecturer_gender default '?',
-	constraint ck_lecturer_gender check gender in ('F', 'M', '?'),
-	constraint df_lecturer_status default true,
+	constraint ck_lecturer_gender check (gender in ('F', 'M'))
 );
 
 create table program (
 	id char(6) not null,
+	code varchar(8),
 	name varchar(100),
 	credit_price integer,
-	faculty_name varchar(35),
+	faculty_id varchar(8),
 	constraint pk_program primary key (id),
-	constraint ck_program_credit_price check credit_price >= 0,
+	constraint ck_program_credit_price check ((credit_price >= 0))
 );
 
 create table student (
@@ -49,11 +51,10 @@ create table student (
 	tutition_debt integer,
 	program_id char(6),
 	constraint pk_student primary key (id),
-	constraint ck_student_gender check gender in ('M', 'F'),
-	constraint df_student_status default true,
+	constraint ck_student_gender check (gender in ('F', 'M')),
 	constraint ck_student_cpa check (cpa >= 0 and cpa <= 4),
 	constraint ck_student_gpa check (gpa >= 0 and gpa <= 4),
-	constraint ck_student_credit_debt check credit_debt >= 0,
+	constraint ck_student_credit_debt check (credit_debt >= 0)
 );
 
 create table subject (
@@ -63,11 +64,11 @@ create table subject (
 	tutition_credits integer,
 	final_weight numeric(3, 2),
 	prerequisite_id char(6),
-	faculty_name varchar(35),
+	faculty_id varchar(8),
 	constraint pk_subject primary key (id),
-	constraint ck_student_study_credits check study_credits >= 0,
-	constraint ck_student_tutition_credits check tutition_credits >= 0,
-	constraint ck_subject_final_weight check (final_weight >= 0 and final_weight <= 1),
+	constraint ck_student_study_credits check (study_credits >= 0),
+	constraint ck_student_tutition_credits check (tutition_credits >= 0),
+	constraint ck_subject_final_weight check (final_weight >= 0 and final_weight <= 1)
 );
 
 create table class (
@@ -76,6 +77,7 @@ create table class (
 	semester char(5),
 	start_time time,
 	end_time time,
+	weekday char(3),
 	study_weeks varchar(35),
 	location varchar(20),
 	current_cap integer,
@@ -85,15 +87,16 @@ create table class (
 	subject_id char(6),
 	constraint pk_class primary key (id),
 	constraint unq_company_id unique (company_id),
-	constraint ck_class_type check type in ('LEC', 'PRA', 'LAB'),
-	constraint ck_class_start_time check start_time < end_time,
-	constraint ck_class_current_cap check current_cap >= 0 and current_cap <= max_cap,
+	constraint ck_class_type check (type in ('LEC', 'PRA', 'LAB')),
+	constraint ck_class_start_time check (start_time < end_time),
+	constraint ck_class_weekday check (weekday in ('MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN')),
+	constraint ck_class_current_cap check (current_cap >= 0 and current_cap <= max_cap)
 );
 
 create table curriculum (
 	program_id char(6) not null,
 	subject_id char(6) not null,
-	constraint pk_curriculum primary key (program_id, subject_id),
+	constraint pk_curriculum primary key (program_id, subject_id)
 );
 
 create table enrollment (
@@ -105,13 +108,13 @@ create table enrollment (
 	constraint pk_enrollment primary key (student_id, class_id),
 	constraint ck_enrollment_midterm_score check (midterm_score >= 0 and midterm_score <= 10),
 	constraint ck_enrollment_final_score check (final_score >= 0 and final_score <= 10),
-	constraint ck_enrollment_absent_count check absent_count >= 0,
+	constraint ck_enrollment_absent_count check (absent_count >= 0)
 );
 
 create table specialization (
 	lecturer_id char(12) not null,
 	subject_id char(6) not null,
-	constraint pk_specialization primary key (lecturer_id, subject_id),
+	constraint pk_specialization primary key (lecturer_id, subject_id)
 );
 
 alter table class
@@ -136,10 +139,10 @@ alter table enrollment
 add constraint fk_enrollment_class foreign key (class_id) references class(id);
 
 alter table lecturer
-add constraint fk_lecturer_faculty foreign key (faculty_name) references faculty(name);
+add constraint fk_lecturer_faculty foreign key (faculty_id) references faculty(id);
 
 alter table program
-add constraint fk_program_faculty foreign key (faculty_name) references faculty(name);
+add constraint fk_program_faculty foreign key (faculty_id) references faculty(id);
 
 alter table specialization
 add constraint fk_specialization_lecturer foreign key (lecturer_id) references lecturer(id);
@@ -151,7 +154,7 @@ alter table student
 add constraint fk_student_program foreign key (program_id) references program(id);
 
 alter table subject
-add constraint fk_subject_faculty foreign key (faculty_name) references faculty(name);
+add constraint fk_subject_faculty foreign key (faculty_id) references faculty(id);
 
 alter table subject
 add constraint fk_subject_subject foreign key (prerequisite_id) references subject(id);

@@ -58,7 +58,7 @@ create table student (
 );
 
 create table subject (
-	id char(6) not null,
+	id varchar(7) not null,
 	name varchar(100),
 	study_credits integer,
 	tutition_credits integer,
@@ -78,13 +78,12 @@ create table class (
 	start_time time,
 	end_time time,
 	weekday char(3),
-	study_weeks varchar(35),
 	location varchar(20),
 	current_cap integer,
 	max_cap integer,
 	company_id char(6),
 	lecturer_id char(12),
-	subject_id char(6),
+	subject_id varchar(7),
 	constraint pk_class primary key (id),
 	constraint unq_company_id unique (company_id),
 	constraint ck_class_type check (type in ('LEC', 'PRA', 'LAB')),
@@ -95,7 +94,7 @@ create table class (
 
 create table curriculum (
 	program_id char(6) not null,
-	subject_id char(6) not null,
+	subject_id varchar(7) not null,
 	constraint pk_curriculum primary key (program_id, subject_id)
 );
 
@@ -113,7 +112,7 @@ create table enrollment (
 
 create table specialization (
 	lecturer_id char(12) not null,
-	subject_id char(6) not null,
+	subject_id varchar(7) not null,
 	constraint pk_specialization primary key (lecturer_id, subject_id)
 );
 

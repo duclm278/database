@@ -18,7 +18,7 @@ create table lecturer (
 	join_date date,
 	address varchar(70),
 	email varchar(35),
-	phone varchar(12),
+	phone varchar(25),
 	faculty_id varchar(8),
 	constraint pk_lecturer primary key (id),
 	constraint ck_lecturer_gender check (gender in ('F', 'M'))
@@ -44,7 +44,7 @@ create table student (
 	join_date date,
 	address varchar(70),
 	email varchar(35),
-	phone varchar(12),
+	phone varchar(25),
 	cpa numeric(3, 2),
 	gpa numeric(3, 2),
 	credit_debt integer,
@@ -63,7 +63,7 @@ create table subject (
 	study_credits integer,
 	tutition_credits integer,
 	final_weight numeric(3, 2),
-	prerequisite_id char(6),
+	prerequisite_id varchar(7),
 	faculty_id varchar(8),
 	constraint pk_subject primary key (id),
 	constraint ck_student_study_credits check (study_credits >= 0),
@@ -72,23 +72,22 @@ create table subject (
 );
 
 create table class (
-	id char(6) not null,
-	type char(3),
+	id serial,
+	code char(6) not null,
+	type varchar(5),
 	semester char(5),
-	start_time time,
-	end_time time,
-	weekday char(3),
+	weekday char(1),
+	start_time char(4),
+	end_time char(4),
 	location varchar(20),
 	current_cap integer,
 	max_cap integer,
-	company_id char(6),
+	company_id integer,
 	lecturer_id char(12),
 	subject_id varchar(7),
 	constraint pk_class primary key (id),
-	constraint unq_company_id unique (company_id),
-	constraint ck_class_type check (type in ('LEC', 'PRA', 'LAB')),
+	constraint ck_class_weekday check (weekday in ('2', '3', '4', '5', '6', '7', '8')),
 	constraint ck_class_start_time check (start_time < end_time),
-	constraint ck_class_weekday check (weekday in ('MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN')),
 	constraint ck_class_current_cap check (current_cap >= 0 and current_cap <= max_cap)
 );
 
@@ -100,7 +99,7 @@ create table curriculum (
 
 create table enrollment (
 	student_id char(8) not null,
-	class_id char(6) not null,
+	class_id serial,
 	midterm_score integer,
 	final_score integer,
 	absent_count integer,

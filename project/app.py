@@ -1,6 +1,7 @@
 import psycopg2
 import random
 from faker import Faker
+from helpers import timeit
 from pprint import pprint
 from psycopg2.extras import execute_values
 
@@ -16,34 +17,38 @@ def main():
     import_data("data/program.csv", "program")
     import_data("data/subject.tsv", "subject", sep="\t")
     import_data("data/class-20221.tsv", "class", sep="\t")
-    insert_lecturers()
+    insert_lecturers(500)
     insert_specialization()
-    assign_lecturers()
-    insert_curriculums()
-    insert_students()
-    insert_enrollments()
+    assign_classes()
+    # insert_curriculums()
+    # insert_students()
+    # insert_enrollments()
     # select_table("specialization")
     curs.close()
     conn.close()
 
 
+@timeit
 def exec_file(path):
     with open(path, "r", encoding="utf-8") as f:
         curs.execute(f.read())
         conn.commit()
 
 
+@timeit
 def import_data(path, table, sep=",", null="NULL"):
     with open(path, "r", encoding="utf-8") as f:
         curs.copy_from(f, table, sep=sep, null=null)
         conn.commit()
 
 
+@timeit
 def select_table(table):
     curs.execute(f"SELECT * FROM {table}")
     pprint(curs.fetchall())
 
 
+@timeit
 def insert_table(table, rows):
     columns = rows[0].keys()
     query = f"INSERT INTO {table} ({', '.join(columns)}) VALUES %s"
@@ -52,12 +57,13 @@ def insert_table(table, rows):
     conn.commit()
 
 
-def insert_lecturers():
+@timeit
+def insert_lecturers(faculty_capacity):
     rows = []
-    curs.execute(f"SELECT * FROM faculty")
+    curs.execute("SELECT * FROM faculty")
     faculties = curs.fetchall()
     for faculty in faculties:
-        for i in range(0, 100):
+        for i in range(faculty_capacity):
             rows.append({
                 "id": fake.pystr(min_chars=12, max_chars=12),
                 "first_name": fake.first_name(),
@@ -75,8 +81,9 @@ def insert_lecturers():
     insert_table("lecturer", rows)
 
 
+@timeit
 def insert_specialization():
-    curs.execute(f"SELECT * FROM faculty")
+    curs.execute("SELECT * FROM faculty")
     faculties = curs.fetchall()
     for faculty in faculties:
         # List of subjects of given faculty
@@ -88,7 +95,7 @@ def insert_specialization():
         curs.execute(
             f"SELECT * FROM lecturer WHERE faculty_id = '{faculty['id']}'")
         lecturers = [item['id'] for item in curs.fetchall()]
-        assigned_lecturers = dict.fromkeys(lecturers, 0)
+        num_of_subjects = dict.fromkeys(lecturers, 0)
 
         # Assign 3 lecturers for each subject
         for i, subject in enumerate(subjects):
@@ -105,34 +112,40 @@ def insert_specialization():
                 conn.commit()
 
                 # Assign each lecturer to maximum 3 subjects
-                assigned_lecturers[lecturer] += 1
-                if assigned_lecturers[lecturer] == 3:
+                num_of_subjects[lecturer] += 1
+                if num_of_subjects[lecturer] == 3:
                     # Remove lecturer if limit reached
                     lecturers.remove(lecturer)
-                    assigned_lecturers.pop(lecturer)
 
-                # TODO: Log output
-                print(
-                    f"{len(subjects) - i - 1} subjects left, {len(lecturers)} lecturers left")
-                curs.execute(
-                    f"SELECT * FROM specialization WHERE lecturer_id = '{lecturer}'")
-                print(curs.fetchall())
-
-
-def assign_lecturers():
-    return None
+    # Check if all subjects have been assigned
+    curs.execute("SELECT COUNT(id) FROM subject")
+    cnt1 = curs.fetchall()[0][0]
+    curs.execute("SELECT COUNT(DISTINCT subject_id) FROM specialization")
+    cnt2 = curs.fetchall()[0][0]
+    if cnt1 != cnt2:
+        raise Exception("Not all subjects have been assigned")
 
 
+@timeit
+def assign_classes():
+    # curs.execute("SELECT * FROM class")
+    # print(curs.fetchall())
+    pass
+
+
+@timeit
 def insert_curriculums():
-    return None
+    pass
 
 
+@timeit
 def insert_students():
-    return None
+    pass
 
 
+@timeit
 def insert_enrollments():
-    return None
+    pass
 
 
 if __name__ == '__main__':

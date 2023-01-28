@@ -2,21 +2,13 @@ import datetime
 import psycopg2
 import random
 from faker import Faker
-from getpass import getpass
-from helpers import timeit
+from helpers import *
 from pprint import pprint
 from psycopg2.extras import execute_values
 
 # Settings
-database = input("Database [Default 'sms']: ") or "sms"
-username = input("Username [Default 'postgres']: ") or "postgres"
-hostname = input("Hostname [Default 'localhost']: ") or "localhost"
-portcode = input("Portcode [Default '5432']: ") or "5432"
-password = None
-while not password:
-    password = getpass("Password: ")
-conn = psycopg2.connect(database=database, user=username,
-                        password=password, host=hostname, port=portcode)
+info = init()
+conn = psycopg2.connect(info)
 curs = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 fake = Faker()
 
@@ -38,9 +30,7 @@ def main():
     insert_curriculums(max_subjects=50)
 
     # Generate students following random program
-    insert_students(year=2020, max_students=5000)
-    insert_students(year=2021, max_students=5000)
-    insert_students(year=2022, max_students=5000)
+    insert_students(years=[2020, 2021, 2022], max_students=5000)
 
     # TODO: Add trigger to update student's status when enrollment is added/removed
     # insert_enrollments()
@@ -318,17 +308,19 @@ def insert_curriculums(max_subjects):
 
 
 @ timeit
-def insert_students(year, max_students):
+def insert_students(years, max_students):
     print("Inserting students...")
 
     # Cap number of students at 9999
     max_students = min(max_students, 9999)
-    for i in range(max_students):
-        student_id = str(year) + str(i).zfill(4)
-        student = generate_student(year, student_id)
-        insert_table("student", [student])
 
-    print(f"- Inserted students for {year}")
+    for year in years:
+        for i in range(max_students):
+            student_id = str(year) + str(i).zfill(4)
+            student = generate_student(year, student_id)
+            insert_table("student", [student])
+
+        print(f"- Inserted students for {year}")
 
 
 def generate_student(year, student_id):

@@ -1,5 +1,18 @@
 import textwrap
 import time
+from getpass import getpass
+
+
+def init():
+    dbname = input("Name [sms]: ") or "sms"
+    user = input("User [postgres]: ") or "postgres"
+    host = input("Host [localhost]: ") or "localhost"
+    port = input("Port [5432]: ") or "5432"
+    password = None
+    while not password:
+        password = getpass("Pass: ")
+
+    return f"dbname={dbname} user={user} host={host} port={port} password={password}"
 
 
 def timeit(f):

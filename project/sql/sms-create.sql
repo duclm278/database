@@ -48,7 +48,7 @@ create table student (
 	cpa numeric(3, 2),
 	gpa numeric(3, 2),
 	credit_debt integer,
-	tutition_debt integer,
+	tuition_debt integer,
 	program_id char(6),
 	constraint pk_student primary key (id),
 	constraint ck_student_gender check (gender in ('F', 'M')),
@@ -61,18 +61,18 @@ create table subject (
 	id varchar(7) not null,
 	name varchar(100),
 	study_credits integer,
-	tutition_credits integer,
+	tuition_credits integer,
 	final_weight numeric(3, 2),
 	prerequisite_id varchar(7),
 	faculty_id varchar(8),
 	constraint pk_subject primary key (id),
 	constraint ck_student_study_credits check (study_credits >= 0),
-	constraint ck_student_tutition_credits check (tutition_credits >= 0),
+	constraint ck_student_tuition_credits check (tuition_credits >= 0),
 	constraint ck_subject_final_weight check (final_weight >= 0 and final_weight <= 1)
 );
 
 create table class (
-	id serial,
+	id char(9) not null,
 	code char(6) not null,
 	type varchar(5),
 	semester char(5),
@@ -82,7 +82,7 @@ create table class (
 	location varchar(20),
 	current_cap integer,
 	max_cap integer,
-	company_id integer,
+	company_id char(9),
 	lecturer_id char(12),
 	subject_id varchar(7),
 	constraint pk_class primary key (id),
@@ -99,7 +99,7 @@ create table curriculum (
 
 create table enrollment (
 	student_id char(8) not null,
-	class_id serial,
+	class_id char(9) not null,
 	midterm_score integer,
 	final_score integer,
 	absent_count integer,

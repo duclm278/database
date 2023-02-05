@@ -72,23 +72,27 @@ create table subject (
 );
 
 create table class (
-	id char(9) not null,
-	code char(6) not null,
+	id char(6),
 	type varchar(5),
 	semester char(5),
-	weekday char(1),
-	start_time char(4),
-	end_time char(4),
-	location varchar(20),
 	current_cap integer,
 	max_cap integer,
 	company_id char(9),
 	lecturer_id char(12),
 	subject_id varchar(7),
 	constraint pk_class primary key (id),
-	constraint ck_class_weekday check (weekday in ('2', '3', '4', '5', '6', '7', '8')),
-	constraint ck_class_start_time check (start_time < end_time),
 	constraint ck_class_current_cap check (current_cap >= 0 and current_cap <= max_cap)
+);
+
+create table timetable (
+	class_id char(6) not null,
+	weekday char(1),
+	start_time char(4),
+	end_time char(4),
+	location varchar(20) default '?',
+	constraint pk_timetable primary key (class_id, weekday, start_time, end_time, location),
+	constraint ck_timetable_weekday check (weekday in ('2', '3', '4', '5', '6', '7', '8')),
+	constraint ck_timetable_start_time check (start_time < end_time)
 );
 
 create table curriculum (
@@ -99,7 +103,7 @@ create table curriculum (
 
 create table enrollment (
 	student_id char(8) not null,
-	class_id char(9) not null,
+	class_id char(6) not null,
 	midterm_score integer,
 	final_score integer,
 	absent_count integer,
@@ -123,6 +127,9 @@ add constraint fk_class_subject foreign key (subject_id) references subject(id);
 
 alter table class
 add constraint fk_class_lecturer foreign key (lecturer_id) references lecturer(id);
+
+alter table timetable
+add constraint fk_timetable_class foreign key (class_id) references class(id);
 
 alter table curriculum
 add constraint fk_curriculum_subject foreign key (subject_id) references subject(id);

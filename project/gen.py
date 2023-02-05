@@ -21,7 +21,8 @@ def main():
     import_data("data/faculty.csv", "faculty")
     import_data("data/program.csv", "program")
     import_data("data/subject.tsv", "subject", sep="\t")
-    import_data("data/class-20221.tsv", "class", sep="\t")
+    import_data("data/20221/class.txt", "class", sep="\t")
+    import_data("data/20221/timetable.txt", "timetable", sep="\t")
 
     # Generate lecturers, assign them to classes and update their specialization
     assign_classes(max_subjects=5, max_classes=25)
@@ -68,80 +69,6 @@ def insert_table(table, rows):
     conn.commit()
 
 
-@timeit
-def insert_lecturers(faculty_capacity):
-    rows = []
-    curs.execute("SELECT * FROM faculty")
-    faculties = curs.fetchall()
-    for faculty in faculties:
-        for i in range(faculty_capacity):
-            rows.append({
-                "id": fake.pystr(min_chars=12, max_chars=12),
-                "first_name": fake.first_name(),
-                "last_name": fake.last_name(),
-                "gender": fake.random_element(elements=("M", "F")),
-                "birthday": fake.date_of_birth(minimum_age=35, maximum_age=70),
-                "status": fake.random_element(elements=(True, False)),
-                "join_date": fake.date_between(start_date="-25y", end_date="today"),
-                "address": fake.address(),
-                "email": fake.email(),
-                "phone": fake.phone_number(),
-                "faculty_id": faculty["id"]
-            })
-
-    insert_table("lecturer", rows)
-
-
-@timeit
-def insert_specialization(max_subjects, max_lecturers):
-    curs.execute("SELECT * FROM faculty")
-    faculties = curs.fetchall()
-    for faculty in faculties:
-        # List of subjects of given faculty
-        curs.execute(
-            f"SELECT * FROM subject WHERE faculty_id = '{faculty['id']}'")
-        subjects = [item['id'] for item in curs.fetchall()]
-
-        # List of lecturers of given faculty
-        curs.execute(
-            f"SELECT * FROM lecturer WHERE faculty_id = '{faculty['id']}'")
-        lecturers = [item['id'] for item in curs.fetchall()]
-        num_of_subjects = dict.fromkeys(lecturers, 0)
-
-        # Assign max_lecturers for each subject
-        for i, subject in enumerate(subjects):
-            # Sample max_lecturers for specialization
-            try:
-                specialization = random.sample(lecturers, max_lecturers)
-            # Assign all lecturers if len(lecturers) < max_lecturers
-            except:
-                specialization = lecturers
-
-            for lecturer in specialization:
-                curs.execute(
-                    f"INSERT INTO specialization (lecturer_id, subject_id) VALUES ('{lecturer}', '{subject}')")
-                conn.commit()
-
-                # Assign each lecturer to maximum max_subjects
-                num_of_subjects[lecturer] += 1
-                if num_of_subjects[lecturer] == max_subjects:
-                    # Remove lecturer if limit reached
-                    lecturers.remove(lecturer)
-
-    # Count subjects not assigned
-    curs.execute(
-        """
-        SELECT id FROM subject
-        EXCEPT
-        SELECT DISTINCT subject_id FROM specialization
-        """
-    )
-
-    result = len(curs.fetchall())
-    if result > 0:
-        print(f"Found {result} subjects not assigned")
-
-
 def generate_lecturer(faculty_id):
     return {
         "id": fake.pystr(min_chars=12, max_chars=12),
@@ -164,8 +91,10 @@ def assign_classes(max_subjects, max_classes):
 
     curs.execute(
         """
-        SELECT class.*, subject.faculty_id FROM class
-        JOIN subject ON class.subject_id = subject.id
+        SELECT class.*, timetable.*, subject.faculty_id
+        FROM class
+        JOIN timetable ON timetable.class_id = class.id
+        JOIN subject ON subject.id = class.subject_id
         """
     )
 
@@ -210,7 +139,9 @@ def assign_classes(max_subjects, max_classes):
                     # Try finding time conflict
                     curs.execute(
                         f"""
-                        SELECT * FROM class
+                        SELECT *
+                        FROM class
+                        JOIN timetable ON timetable.class_id = class.id
                         WHERE lecturer_id = '{lecturer_id}'
                         AND weekday = '{row["weekday"]}'
                         AND (

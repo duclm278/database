@@ -21,6 +21,8 @@ def main():
     import_data("data/faculty.csv", "faculty")
     import_data("data/program.csv", "program")
     import_data("data/subject.tsv", "subject", sep="\t")
+    # import_data("data/20212/class.txt", "class", sep="\t")
+    # import_data("data/20212/timetable.txt", "timetable", sep="\t")
     import_data("data/20221/class.txt", "class", sep="\t")
     import_data("data/20221/timetable.txt", "timetable", sep="\t")
 
@@ -274,8 +276,10 @@ def generate_student(year, student_id):
         "address": fake.address(),
         "email": fake.email(),
         "phone": fake.phone_number(),
-        "cpa": 0,
-        "gpa": 0,
+        "cpa_total_score_product": 0,
+        "gpa_total_score_product": 0,
+        "cpa_study_credits": 0,
+        "gpa_study_credits": 0,
         "credit_debt": 0,
         "tuition_debt": 0,
         "program_id": fake.random_element(elements=program_ids)

@@ -45,15 +45,19 @@ create table student (
 	address varchar(70),
 	email varchar(35),
 	phone varchar(25),
-	cpa numeric(3, 2),
-	gpa numeric(3, 2),
+	cpa_total_score_product numeric,
+	cpa_total_study_credits integer,
+	gpa_total_score_product numeric,
+	gpa_total_study_credits integer,
 	credit_debt integer,
 	tuition_debt integer,
 	program_id char(6),
 	constraint pk_student primary key (id),
 	constraint ck_student_gender check (gender in ('F', 'M')),
-	constraint ck_student_cpa check (cpa >= 0 and cpa <= 4),
-	constraint ck_student_gpa check (gpa >= 0 and gpa <= 4),
+	constraint ck_student_cpa_total_score_product check (cpa_total_score_product >= 0),
+	constraint ck_student_cpa_study_credits check (cpa_total_study_credits >= 0),
+	constraint ck_student_gpa_total_score_product check (gpa_total_score_product >= 0),
+	constraint ck_student_gpa_study_credits check (gpa_total_study_credits >= 0),
 	constraint ck_student_credit_debt check (credit_debt >= 0)
 );
 
@@ -75,12 +79,14 @@ create table class (
 	id char(6),
 	type varchar(5),
 	semester char(5),
+	require_lab_same_term char(1),
 	current_cap integer,
 	max_cap integer,
 	company_id char(9),
 	lecturer_id char(12),
 	subject_id varchar(7),
 	constraint pk_class primary key (id),
+	constraint ck_require_lab_same_term check (require_lab_same_term in ('Y', 'N')),
 	constraint ck_class_current_cap check (current_cap >= 0 and current_cap <= max_cap)
 );
 

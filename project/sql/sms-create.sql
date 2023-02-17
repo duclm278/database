@@ -46,26 +46,26 @@ create table student (
 	email varchar(35),
 	phone varchar(25),
 	cpa_total_score_product numeric,
-	cpa_total_study_credits integer,
+	cpa_total_study_credits numeric,
 	gpa_total_score_product numeric,
-	gpa_total_study_credits integer,
-	credit_debt integer,
-	tuition_debt integer,
+	gpa_total_study_credits numeric,
+	credit_debt numeric,
+	tuition_debt numeric,
 	program_id char(6),
 	constraint pk_student primary key (id),
 	constraint ck_student_gender check (gender in ('F', 'M')),
 	constraint ck_student_cpa_total_score_product check (cpa_total_score_product >= 0),
-	constraint ck_student_cpa_study_credits check (cpa_total_study_credits >= 0),
+	constraint ck_student_cpa_total_study_credits check (cpa_total_study_credits >= 0),
 	constraint ck_student_gpa_total_score_product check (gpa_total_score_product >= 0),
-	constraint ck_student_gpa_study_credits check (gpa_total_study_credits >= 0),
+	constraint ck_student_gpa_total_study_credits check (gpa_total_study_credits >= 0),
 	constraint ck_student_credit_debt check (credit_debt >= 0)
 );
 
 create table subject (
 	id varchar(7) not null,
 	name varchar(100),
-	study_credits integer,
-	tuition_credits integer,
+	study_credits numeric,
+	tuition_credits numeric,
 	final_weight numeric(3, 2),
 	prerequisite_id varchar(7),
 	faculty_id varchar(8),
@@ -77,7 +77,7 @@ create table subject (
 
 create table class (
 	id char(6),
-	type varchar(5),
+	type varchar(8),
 	semester char(5),
 	require_lab_same_term char(1),
 	current_cap integer,
@@ -95,7 +95,7 @@ create table timetable (
 	weekday char(1),
 	start_time char(4),
 	end_time char(4),
-	location varchar(20) default '?',
+	location varchar(25) default '?',
 	constraint pk_timetable primary key (class_id, weekday, start_time, end_time, location),
 	constraint ck_timetable_weekday check (weekday in ('2', '3', '4', '5', '6', '7', '8')),
 	constraint ck_timetable_start_time check (start_time < end_time)

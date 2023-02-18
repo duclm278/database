@@ -35,8 +35,8 @@ def main():
     # Generate students following random program
     insert_students(years=[2020, 2021, 2022], max_students=5000)
 
-    # TODO: Add trigger to update student's status when enrollment is added/removed
-    # insert_enrollments()
+    # Generate old enrollments without complex checking
+    simple_enrollments(semester=20212, max_subjects=10)
 
     # Close connection
     curs.close()
@@ -287,8 +287,103 @@ def generate_student(year, student_id):
 
 
 @ timeit
-def insert_enrollments():
-    pass
+def simple_enrollments(semester, max_subjects):
+    print("Inserting enrollments...")
+    year = semester // 10
+
+    # Get list of students joined program
+    curs.execute(
+        f"SELECT student.*, faculty_id FROM student JOIN program ON student.program_id = program.id WHERE student.join_date <= '{year}-12-31'")
+    students = curs.fetchall()
+
+    # Get list of classes joined with subjects
+    curs.execute(
+        f"SELECT class.*, study_credits, final_weight, prerequisite_id, faculty_id FROM class JOIN subject ON class.subject_id = subject.id WHERE class.semester = '{semester}'")
+    classes = curs.fetchall()
+
+    for student in students:
+        selected_classes = []
+        selected_subjects = []
+
+        # Get list of classes having same faculty as student
+        filtered_classes = [
+            row for row in classes if row["faculty_id"] == student["faculty_id"]]
+
+        while len(selected_subjects) < max_subjects:
+            # Get random class from filtered list
+            selected_class = fake.random_element(elements=filtered_classes)
+
+            # Check if class having prerequisite subject
+            if selected_class["prerequisite_id"] is not None:
+                if selected_class["prerequisite_id"] not in selected_subjects:
+                    try:
+                        prerequisite_class = next(
+                            row for row in classes if row["subject_id"] == selected_class["prerequisite_id"] and row["semester"] == semester)
+                        selected_classes.append(prerequisite_class)
+                    except StopIteration:
+                        continue
+
+            # Check if class requiring company lab class
+            if selected_class["require_lab"] == "Y":
+                if not any(row["subject_id"] == selected_class["subject_id"] for row in selected_classes):
+                    try:
+                        lab_class = next(
+                            row for row in classes if row["subject_id"] == selected_class["subject_id"] and row["type"] == "TN")
+                    except StopIteration:
+                        continue
+                    selected_classes.append(lab_class)
+
+            # If subject already selected, skip
+            if selected_class["subject_id"] in selected_subjects:
+                continue
+
+            selected_classes.append(selected_class)
+            selected_subjects.append(selected_class["subject_id"])
+
+            # Init enrollment
+            midterm_score = random.randint(0, 10)
+            final_score = random.randint(0, 10)
+            total_score = midterm_score * \
+                (1 - selected_class["final_weight"]) + \
+                final_score * selected_class["final_weight"]
+            absent_count = random.randint(0, 8)
+
+            # Insert enrollment
+            curs.execute(
+                f"INSERT INTO enrollment (student_id, class_id, midterm_score, final_score, absent_count) VALUES ('{student['id']}', '{selected_class['id']}', {midterm_score}, {final_score}, {absent_count})")
+            conn.commit()
+
+            # 0-3.9: 0.0, 4-4.9: 1.0, 5-5.4: 1.5, 5.5-6.4: 2.0, 6.5-6.9: 2.5, 7-7.9: 3.0, 8-8.4: 3.5, 8.5-10: 4.0
+            if total_score <= 3.9:
+                total_score = 0.0
+            elif total_score <= 4.9:
+                total_score = 1.0
+            elif total_score <= 5.4:
+                total_score = 1.5
+            elif total_score <= 6.4:
+                total_score = 2.0
+            elif total_score <= 6.9:
+                total_score = 2.5
+            elif total_score <= 7.9:
+                total_score = 3.0
+            elif total_score <= 8.4:
+                total_score = 3.5
+            else:
+                total_score = 4.0
+
+            if total_score == 0:
+                curs.execute(
+                    f"UPDATE student SET credit_debt = credit_debt + {selected_class['study_credits']} WHERE id = '{student['id']}'")
+                conn.commit()
+
+            curs.execute(
+                f"UPDATE student SET cpa_total_score_product = cpa_total_score_product + {total_score * float(selected_class['study_credits'])}, cpa_total_study_credits = cpa_total_study_credits + {selected_class['study_credits']} WHERE id = '{student['id']}'")
+            conn.commit()
+
+            # Remove class from filtered list
+            filtered_classes.remove(selected_class)
+
+    print(f"- Inserted enrollments for {semester}")
 
 
 if __name__ == '__main__':

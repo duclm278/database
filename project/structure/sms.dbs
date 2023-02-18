@@ -3,8 +3,9 @@
 	<schema name="public" >
 		<table name="class" generator_rows="0" >
 			<column name="id" type="char" length="6" decimal="0" jt="1" mandatory="y" />
-			<column name="type" type="varchar" length="5" decimal="0" jt="12" />
+			<column name="type" type="varchar" length="8" decimal="0" jt="12" />
 			<column name="semester" type="char" length="5" decimal="0" jt="1" />
+			<column name="require_lab" type="char" length="1" decimal="0" jt="1" />
 			<column name="current_cap" type="integer" length="10" decimal="0" jt="4" />
 			<column name="max_cap" type="integer" length="10" decimal="0" jt="4" />
 			<column name="company_id" type="char" length="9" decimal="0" jt="1" />
@@ -15,6 +16,9 @@
 			</index>
 			<constraint name="ck_class_current_cap" >
 				<string><![CDATA[((current_cap >= 0) AND (current_cap <= max_cap))]]></string>
+			</constraint>
+			<constraint name="ck_require_lab_same_term" >
+				<string><![CDATA[(require_lab = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))]]></string>
 			</constraint>
 			<fk name="fk_class_class" to_schema="public" to_table="class" >
 				<fk_column name="company_id" pk="id" />
@@ -43,9 +47,15 @@
 		<table name="enrollment" generator_rows="0" >
 			<column name="student_id" type="char" length="8" decimal="0" jt="1" mandatory="y" />
 			<column name="class_id" type="char" length="6" decimal="0" jt="1" mandatory="y" />
-			<column name="midterm_score" type="integer" length="10" decimal="0" jt="4" />
-			<column name="final_score" type="integer" length="10" decimal="0" jt="4" />
-			<column name="absent_count" type="integer" length="10" decimal="0" jt="4" />
+			<column name="midterm_score" type="integer" length="10" decimal="0" jt="4" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="final_score" type="integer" length="10" decimal="0" jt="4" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="absent_count" type="integer" length="10" decimal="0" jt="4" >
+				<defo><![CDATA[0]]></defo>
+			</column>
 			<index name="pk_enrollment" unique="PRIMARY_KEY" >
 				<column name="student_id" />
 				<column name="class_id" />
@@ -137,10 +147,24 @@
 			<column name="address" type="varchar" length="70" decimal="0" jt="12" />
 			<column name="email" type="varchar" length="35" decimal="0" jt="12" />
 			<column name="phone" type="varchar" length="25" decimal="0" jt="12" />
-			<column name="cpa" type="numeric" length="3" decimal="2" jt="2" />
-			<column name="gpa" type="numeric" length="3" decimal="2" jt="2" />
-			<column name="credit_debt" type="integer" length="10" decimal="0" jt="4" />
-			<column name="tuition_debt" type="integer" length="10" decimal="0" jt="4" />
+			<column name="cpa_total_score_product" type="numeric" jt="2" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="cpa_total_study_credits" type="numeric" jt="2" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="gpa_total_score_product" type="numeric" jt="2" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="gpa_total_study_credits" type="numeric" jt="2" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="credit_debt" type="numeric" jt="2" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="tuition_debt" type="numeric" jt="2" >
+				<defo><![CDATA[0]]></defo>
+			</column>
 			<column name="program_id" type="char" length="6" decimal="0" jt="1" />
 			<index name="pk_student" unique="PRIMARY_KEY" >
 				<column name="id" />
@@ -148,14 +172,20 @@
 			<constraint name="ck_student_credit_debt" >
 				<string><![CDATA[(credit_debt >= 0)]]></string>
 			</constraint>
-			<constraint name="ck_student_gpa" >
-				<string><![CDATA[((gpa >= (0)::numeric) AND (gpa <= (4)::numeric))]]></string>
-			</constraint>
-			<constraint name="ck_student_cpa" >
-				<string><![CDATA[((cpa >= (0)::numeric) AND (cpa <= (4)::numeric))]]></string>
-			</constraint>
 			<constraint name="ck_student_gender" >
 				<string><![CDATA[(gender = ANY (ARRAY['M'::bpchar, 'F'::bpchar]))]]></string>
+			</constraint>
+			<constraint name="ck_student_gpa_total_study_credits" >
+				<string><![CDATA[(gpa_total_study_credits >= (0)::numeric)]]></string>
+			</constraint>
+			<constraint name="ck_student_gpa_total_score_product" >
+				<string><![CDATA[(gpa_total_score_product >= (0)::numeric)]]></string>
+			</constraint>
+			<constraint name="ck_student_cpa_total_study_credits" >
+				<string><![CDATA[(cpa_total_study_credits >= (0)::numeric)]]></string>
+			</constraint>
+			<constraint name="ck_student_cpa_total_score_product" >
+				<string><![CDATA[(cpa_total_score_product >= (0)::numeric)]]></string>
 			</constraint>
 			<fk name="fk_student_program" to_schema="public" to_table="program" >
 				<fk_column name="program_id" pk="id" />
@@ -164,8 +194,8 @@
 		<table name="subject" generator_rows="0" >
 			<column name="id" type="varchar" length="7" decimal="0" jt="12" mandatory="y" />
 			<column name="name" type="varchar" length="100" decimal="0" jt="12" />
-			<column name="study_credits" type="integer" length="10" decimal="0" jt="4" />
-			<column name="tuition_credits" type="integer" length="10" decimal="0" jt="4" />
+			<column name="study_credits" type="numeric" jt="2" />
+			<column name="tuition_credits" type="numeric" jt="2" />
 			<column name="final_weight" type="numeric" length="3" decimal="2" jt="2" />
 			<column name="prerequisite_id" type="varchar" length="7" decimal="0" jt="12" />
 			<column name="faculty_id" type="varchar" length="8" decimal="0" jt="12" />
@@ -193,7 +223,7 @@
 			<column name="weekday" type="char" length="1" decimal="0" jt="1" mandatory="y" />
 			<column name="start_time" type="char" length="4" decimal="0" jt="1" mandatory="y" />
 			<column name="end_time" type="char" length="4" decimal="0" jt="1" mandatory="y" />
-			<column name="location" type="varchar" length="20" decimal="0" jt="12" mandatory="y" >
+			<column name="location" type="varchar" length="25" decimal="0" jt="12" mandatory="y" >
 				<defo><![CDATA['?'::character varying]]></defo>
 			</column>
 			<index name="pk_timetable" unique="PRIMARY_KEY" >
@@ -218,12 +248,12 @@
 	<layout name="Default Layout" id="Layout-a90" show_column_type="y" show_relation="columns" >
 		<entity schema="public" name="class" color="BED3F4" x="672" y="80" />
 		<entity schema="public" name="curriculum" color="BED3F4" x="224" y="400" />
-		<entity schema="public" name="enrollment" color="BED3F4" x="1024" y="224" />
+		<entity schema="public" name="enrollment" color="BED3F4" x="1024" y="208" />
 		<entity schema="public" name="faculty" color="BED3F4" x="48" y="512" />
 		<entity schema="public" name="lecturer" color="BED3F4" x="112" y="64" />
 		<entity schema="public" name="program" color="BED3F4" x="560" y="496" />
 		<entity schema="public" name="specialization" color="BED3F4" x="384" y="112" />
-		<entity schema="public" name="student" color="BED3F4" x="800" y="336" />
+		<entity schema="public" name="student" color="BED3F4" x="784" y="336" />
 		<entity schema="public" name="subject" color="BED3F4" x="464" y="272" />
 		<entity schema="public" name="timetable" color="3986C1" x="928" y="48" />
 	</layout>

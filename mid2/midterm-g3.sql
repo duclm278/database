@@ -125,12 +125,12 @@ BEGIN
     -- Return the range
     IF (correct_total_sold > 30) THEN
         RETURN 'trending';
-    ELSE IF (correct_total_sold BETWEEN 20 AND 30) THEN
+    ELSIF (correct_total_sold BETWEEN 20 AND 30) THEN
         RETURN 'potential';
     ELSE
         RETURN 'new';
     END IF;
-END;
+END
 $$;
 
 -- Test function
